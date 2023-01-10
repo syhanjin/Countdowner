@@ -25,7 +25,9 @@ DEFAULT = {
     "image": True,
     "image_current": None,
     "image_time": None,
-    "image_switch_frames": 80
+    "image_switch_frames": 80,
+    "daily_sentence": False,  # 每日一句，如果为True，会强制使用全局文本库，且每日按顺序切换下一句
+    "text_time": None
 }
 
 
@@ -38,6 +40,8 @@ class ConfigManager:
     image_current: str = DEFAULT["image_current"]
     image_time: str = DEFAULT["image_time"]
     image_switch_frames: int = DEFAULT["image_switch_frames"]
+    daily_sentence: bool = DEFAULT["daily_sentence"]
+    text_time: str = DEFAULT["text_time"]
 
     def __init__(self, data=None) -> None:
         if data is None:

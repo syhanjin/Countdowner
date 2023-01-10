@@ -300,7 +300,7 @@
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color: #000; opacity: 0;</string>
+    <string notr="true">background-color: #000;</string>
    </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>

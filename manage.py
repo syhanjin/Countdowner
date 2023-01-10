@@ -2,6 +2,7 @@
 # 配置控制文件
 import getopt
 import os.path
+import random
 import sys
 
 from configs.path_config import TEXTS_FILE
@@ -30,6 +31,7 @@ Countdown配置快速管理工具
  --load_texts PATH 导入句子 传文本文件路径 一行一句，不超过100字 \n将会被替换为换行符
  --show_texts 显示已导入的句子
  --del_texts ID 删除句子，ID由逗号分隔，传入all则删除全部
+ --shuffle_texts 随机排序句子
 """.strip()
 
 
@@ -46,7 +48,7 @@ def main(argv):
             [
                 "hide_image", "duration=", "image_switch_frames=",
                 "show_countdown", "target_name=", "target_time=",
-                "load_texts=", "show_texts", "del_texts="
+                "load_texts=", "show_texts", "del_texts=", "shuffle_texts"
             ]
         )
     except getopt.GetoptError:
@@ -82,10 +84,30 @@ def main(argv):
             texts_json = get_texts_json()
             ids = [int(x) for x in arg.split(",")]
             ids = sorted(ids, reverse=True)
+            current = texts_json.get("current")
             for id in ids:
+                if current is None:
+                    pass
+                elif id == current:
+                    current = None
+                elif id < current:
+                    current -= 1
                 print(f"删除\"{texts_json['texts'][id]}\"成功")
                 texts_json["texts"].pop(id)
             print(f"删除完毕，共{len(ids)}条")
+            texts_json['current'] = current
+            save_json(texts_json, TEXTS_FILE)
+        elif opt == "--shuffle_texts":
+            texts_json = get_texts_json()
+            current = texts_json.get("current")
+            if current is None:
+                random.shuffle(texts_json["texts"])
+            else:
+                current_text = texts_json["texts"].pop(current)
+                random.shuffle(texts_json["texts"])
+                texts_json["texts"].insert(0, current_text)
+                texts_json["current"] = 0
+            print(f"已打乱，共{len(texts_json['texts'])}句")
             save_json(texts_json, TEXTS_FILE)
 
 

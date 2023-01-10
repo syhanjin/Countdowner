@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 from configs.config import CONFIG_TIME_FORMAT, Config
 from configs.path_config import ASSETS_ROOT, WALLPAPER_DEFAULT_CONFIG_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
 from models.bgimage import WallpaperSwitcher
-from models.texter import DaysTexter, TimeTexter
+from models.texter import DailySentenceTexter, DaysTexter, TimeTexter
 from utils import load_json, save_json
 from .bg import Ui_BgWindow
 from ..utils import pretreatmentHandle
@@ -69,6 +69,10 @@ class BgWindow(QWidget, Ui_BgWindow):
         else:
             self.CountDown.hide()
         self.create_wallpaper_switcher()
+        if Config.daily_sentence:
+            self.progress_list.append(
+                DailySentenceTexter(self.Text.setText)
+            )
 
     def setTextBoxAlign(self, align):
         if align == "left":
@@ -79,27 +83,28 @@ class BgWindow(QWidget, Ui_BgWindow):
             self.Text.setAlignment(Qt.AlignRight)
 
     def create_wallpaper_switcher(self):
-        if self.wallpapers:
-            self.wallpaper_switcher = WallpaperSwitcher(
-                self.wallpapers,
-                {
-                    "setTimeBox": self.DateTime.move,
-                    "setCountDownBox": self.CountDown.move,
-                    "setCountDownTextColor": self.CountDown.setStyleSheet,
-                    "setCountDownDaysColor": self.days.setStyleSheet,
-                    "setCountDownTargetColor": self.target.setStyleSheet,
-                    "setTextBox": self.Text.setGeometry,
-                    "setTextBoxStyleSheet": self.Text.setStyleSheet,
-                    "setTextBoxAlign": self.setTextBoxAlign,
-                    "setText": self.Text.setText,
-                    "setImage": self.image.setPixmap
-                },
-                duration=Config.image_duration,
-                setOpacity=self.markOpacity.setOpacity
-            )
-            self.progress_list.append(self.wallpaper_switcher)
-        else:
-            self.markOpacity.setOpacity(0)
+        # if self.wallpapers and Config.image:
+        self.wallpaper_switcher = WallpaperSwitcher(
+            self.wallpapers,
+            {
+                "setTimeBox": self.DateTime.move,
+                "setCountDownBox": self.CountDown.move,
+                "setCountDownTextColor": self.CountDown.setStyleSheet,
+                "setCountDownDaysColor": self.days.setStyleSheet,
+                "setCountDownTargetColor": self.target.setStyleSheet,
+                "setTextBox": self.Text.setGeometry,
+                "setTextBoxStyleSheet": self.Text.setStyleSheet,
+                "setTextBoxAlign": self.setTextBoxAlign,
+                "setText": self.Text.setText,
+                "setImage": self.image.setPixmap
+            },
+            duration=Config.image_duration,
+            setOpacity=self.markOpacity.setOpacity
+        )
+        self.progress_list.append(self.wallpaper_switcher)
+
+    # else:
+    #     self.markOpacity.setOpacity(0)
 
     def reload_wallpapers(self):
         self.progress_list.remove(self.wallpaper_switcher)

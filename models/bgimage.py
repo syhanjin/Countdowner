@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPixmap
 
 from configs.config import CONFIG_TIME_FORMAT, Config
 from configs.path_config import TEXTS_FILE, WALLPAPER_ROOT
-from utils import load_json
+from utils import load_json, text_wrapper
 
 
 class BgImage(QObject):
@@ -77,17 +77,16 @@ class BgImage(QObject):
         self.setCountDownTargetColorSignal.emit(self.colorsheet(self.countdownbox["color"]["target"]))
 
     def setText(self):
-        def text_wrapper(text):
-            lines = text.strip().split("\n")
-            if len(lines) == 1:
-                return f"「{lines[0]}」"
-            else:
-                wrapped = f"「{lines[0]}　\n"
-                for index in range(1, len(lines) - 1):
-                    wrapped += f"　{lines[index]}\n"
-                wrapped += f"　　{lines[-1]}」"
-                return wrapped
+        textbox = random.choice(self.textbox["pos"])
+        self.setTextBoxSignal.emit(*textbox)
+        self.setTextBoxAlignSignal.emit(self.textbox["align"])
+        if self.textbox["stylesheet"]:
+            self.setTextBoxStyleSheetSignal.emit(self.textbox["stylesheet"])
+        self._setTextContent()
 
+    def _setTextContent(self):
+        if Config.daily_sentence:
+            return
         if self.textbox['use_global_texts']:
             if not os.path.exists(TEXTS_FILE):
                 return
@@ -99,12 +98,7 @@ class BgImage(QObject):
             if not self.textbox["texts"]:
                 return
             text = random.choice(self.textbox['texts'])
-        textbox = random.choice(self.textbox["pos"])
-        self.setTextBoxSignal.emit(*textbox)
         self.setTextSignal.emit(text_wrapper(text))
-        self.setTextBoxAlignSignal.emit(self.textbox["align"])
-        if self.textbox["stylesheet"]:
-            self.setTextBoxStyleSheetSignal.emit(self.textbox["stylesheet"])
 
     def setImage(self):
         self.setImageSignal.emit(QPixmap(self.image_path))
@@ -129,13 +123,14 @@ class WallpaperSwitcher(QObject):
         self.queue: List = self.wallpapers.copy()
         self.duration = duration
         self.wp = None
-        if Config.image_current is None or Config.image_current not in self.wallpapers:
-            Config.image_current = self.queue[0]
-            Config.save()
-        while self.queue[0] != Config.image_current:
-            self.queue.pop(0)
+        if self.activated:
+            if Config.image_current is None or Config.image_current not in self.wallpapers:
+                Config.image_current = self.queue[0]
+                Config.save()
+            while self.queue[0] != Config.image_current:
+                self.queue.pop(0)
         self.setOpacity.connect(setOpacity)
-        self.switch = self.SwitchStatus.Waiting
+        self.switch = self.SwitchStatus.Lightening
         self.opacity = 1.0
         self.frames = frames
         if Config.image_time is None:
@@ -143,7 +138,6 @@ class WallpaperSwitcher(QObject):
         else:
             self.last = datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
             self.switchNext()
-            self.switch = self.SwitchStatus.Lightening
         # print(self.last)
 
     def path(self, dirname):
@@ -155,6 +149,8 @@ class WallpaperSwitcher(QObject):
         return current
 
     def switchNext(self):
+        if not self.activated:
+            return
         self.wp = BgImage(self.path(self.setCurrent(self.queue.pop(0))))
         self.wp.connectSignals(**self.functions)
         self.wp.setAll()
@@ -177,9 +173,12 @@ class WallpaperSwitcher(QObject):
                 self.opacity = 0
                 self.setOpacity.emit(0)
                 self.switch = self.SwitchStatus.Waiting
-                self.setLast(now)
+                if self.activated:
+                    self.setLast(now)
             else:
                 self.setOpacity.emit(self.opacity)
+        elif not self.activated:
+            return
         elif self.last is None:
             self.switchNext()
             self.setLast(now)
@@ -191,3 +190,7 @@ class WallpaperSwitcher(QObject):
         self.last = now
         Config.image_time = now.__format__(CONFIG_TIME_FORMAT)
         Config.save()
+
+    @property
+    def activated(self):
+        return self.wallpapers and Config.image

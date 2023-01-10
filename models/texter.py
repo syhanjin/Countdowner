@@ -4,6 +4,10 @@ from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from configs.config import Config
+from configs.path_config import TEXTS_FILE
+from utils import load_json, save_json, text_wrapper
+
 
 class TimeTexter(QObject):
     update = pyqtSignal(str)
@@ -50,3 +54,34 @@ class DaysTexter(QObject):
         if self.last is None or delta.days != self.last.days:
             self.update.emit(str(delta.days))
             self.last = delta
+
+
+class DailySentenceTexter(QObject):
+    update = pyqtSignal(str)
+
+    def __init__(self, function, ):
+        """
+        每日一句文本更新器
+        使用全局文本库
+        """
+        super().__init__()
+        self.last: Optional[datetime] = Config.text_time
+        self.update.connect(function)
+
+    def switchText(self):
+        texts_json = load_json(TEXTS_FILE)
+        id_ = texts_json.get("current")
+        if id_ is None or id_ + 1 >= len(texts_json["texts"]):
+            id_ = 0
+        else:
+            id_ += 1
+        texts_json["current"] = id_
+        self.update.emit(text_wrapper(texts_json["texts"][id_]))
+        save_json(texts_json, TEXTS_FILE)
+
+    def progress(self, now: datetime):
+        if self.last is None or self.last.date() != now.date():
+            self.switchText()
+            self.last = now
+            Config.text_time = self.last
+            Config.save()

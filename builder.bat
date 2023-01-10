@@ -1,1 +1,1 @@
-conda activate countdowner&&pyinstaller manage.spec&&pyinstaller main.spec&&copy dist/manage.exe dist/main/
+conda activate countdowner&&pyinstaller manage.spec&&pyinstaller main.spec&&move dist\manage.exe dist\main\
