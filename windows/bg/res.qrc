@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="assets">
+    <file>font/LXGWWenKai-Regular.ttf</file>
+  </qresource>
+</RCC>
