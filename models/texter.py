@@ -65,8 +65,16 @@ class DailySentenceTexter(QObject):
         使用全局文本库
         """
         super().__init__()
-        self.last: Optional[datetime] = datetime.strptime(Config.text_time, CONFIG_TIME_FORMAT)
         self.update.connect(function)
+        if Config.text_time is None:
+            self.last = None
+        else:
+            self.last: Optional[datetime] = datetime.strptime(Config.text_time, CONFIG_TIME_FORMAT)
+            texts_json = load_json(TEXTS_FILE)
+            if texts_json.get("current") is None:
+                self.switchText()
+            else:
+                self.setText(texts_json["texts"][texts_json["current"]])
 
     def switchText(self):
         texts_json = load_json(TEXTS_FILE)
@@ -76,8 +84,11 @@ class DailySentenceTexter(QObject):
         else:
             id_ += 1
         texts_json["current"] = id_
-        self.update.emit(text_wrapper(texts_json["texts"][id_]))
+        self.setText(texts_json["texts"][id_])
         save_json(texts_json, TEXTS_FILE)
+
+    def setText(self, text):
+        self.update.emit(text_wrapper(text))
 
     def progress(self, now: datetime):
         if self.last is None or self.last.date() != now.date():
