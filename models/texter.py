@@ -4,7 +4,7 @@ from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from configs.config import Config
+from configs.config import CONFIG_TIME_FORMAT, Config
 from configs.path_config import TEXTS_FILE
 from utils import load_json, save_json, text_wrapper
 
@@ -65,7 +65,7 @@ class DailySentenceTexter(QObject):
         使用全局文本库
         """
         super().__init__()
-        self.last: Optional[datetime] = Config.text_time
+        self.last: Optional[datetime] = datetime.strptime(Config.text_time, CONFIG_TIME_FORMAT)
         self.update.connect(function)
 
     def switchText(self):
@@ -83,5 +83,5 @@ class DailySentenceTexter(QObject):
         if self.last is None or self.last.date() != now.date():
             self.switchText()
             self.last = now
-            Config.text_time = self.last
+            Config.text_time = self.last.__format__(CONFIG_TIME_FORMAT)
             Config.save()

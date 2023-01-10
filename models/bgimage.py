@@ -138,6 +138,8 @@ class WallpaperSwitcher(QObject):
         else:
             self.last = datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
             self.switchNext()
+            if (datetime.now() - self.last).total_seconds() > self.duration:
+                self.switchNext()
         # print(self.last)
 
     def path(self, dirname):
