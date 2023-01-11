@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QApplication, QGraphicsOpacityEffect, QMenu, QWidget,
 )
 
-from configs.config import CONFIG_TIME_FORMAT, Config
+from configs.config import Config
 from configs.path_config import ASSETS_ROOT, WALLPAPER_DEFAULT_CONFIG_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
 from models.bgimage import WallpaperSwitcher
 from models.texter import DailySentenceTexter, DaysTexter, TimeTexter
@@ -45,6 +45,7 @@ class BgWindow(QWidget, Ui_BgWindow):
         self.setWindowFlags(
             Qt.FramelessWindowHint
         )
+        self.lower()
         QFontDatabase.addApplicationFont(os.path.join(ASSETS_ROOT, "font", "LXGWWenKai-Regular.ttf"))
         self.load_wallpapers()
 
@@ -64,7 +65,7 @@ class BgWindow(QWidget, Ui_BgWindow):
             self.CountDown.show()
             self.target.setText(Config.target_name)
             self.progress_list += [
-                DaysTexter(datetime.strptime(Config.target_time, CONFIG_TIME_FORMAT), self.days.setText)
+                DaysTexter(Config.target_time, self.days.setText)
             ]
         else:
             self.CountDown.hide()

@@ -7,7 +7,7 @@ from typing import List
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 
-from configs.config import CONFIG_TIME_FORMAT, Config
+from configs.config import Config
 from configs.path_config import TEXTS_FILE, WALLPAPER_ROOT
 from utils import load_json, text_wrapper
 
@@ -136,7 +136,7 @@ class WallpaperSwitcher(QObject):
         if Config.image_time is None:
             self.last = None
         else:
-            self.last = datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
+            self.last = Config.image_time  # datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
             self.switchNext()
             if (datetime.now() - self.last).total_seconds() > self.duration:
                 self.switchNext()
@@ -190,7 +190,7 @@ class WallpaperSwitcher(QObject):
 
     def setLast(self, now):
         self.last = now
-        Config.image_time = now.__format__(CONFIG_TIME_FORMAT)
+        Config.image_time = now  # .__format__(CONFIG_TIME_FORMAT)
         Config.save()
 
     @property

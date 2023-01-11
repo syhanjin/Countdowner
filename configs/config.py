@@ -15,12 +15,12 @@ import yaml
 
 from configs.path_config import CONFIG_FILE
 
-CONFIG_TIME_FORMAT = "%Y-%m-%d %H:%M:%S:%f"
+CONFIG_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 DEFAULT = {
     "target": False,
     "target_name": "2024年高考",
-    "target_time": datetime(2024, 6, 7).__format__(CONFIG_TIME_FORMAT),
+    "target_time": datetime(2024, 6, 7),  # .__format__(CONFIG_TIME_FORMAT),
     "image_duration": 1800,
     "image": True,
     "image_current": None,
@@ -34,14 +34,14 @@ DEFAULT = {
 class ConfigManager:
     target: bool = DEFAULT["target"]
     target_name: str = DEFAULT["target_name"]
-    target_time: str = DEFAULT["target_time"]
+    target_time: datetime = DEFAULT["target_time"]
     image_duration: int = DEFAULT["image_duration"]
     image: bool = DEFAULT["image"]
     image_current: str = DEFAULT["image_current"]
-    image_time: str = DEFAULT["image_time"]
+    image_time: datetime = DEFAULT["image_time"]
     image_switch_frames: int = DEFAULT["image_switch_frames"]
     daily_sentence: bool = DEFAULT["daily_sentence"]
-    text_time: str = DEFAULT["text_time"]
+    text_time: datetime = DEFAULT["text_time"]
 
     def __init__(self, data=None) -> None:
         if data is None:
