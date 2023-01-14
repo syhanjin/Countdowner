@@ -2,7 +2,7 @@
 import os
 import random
 from datetime import datetime
-from typing import List
+from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
@@ -116,65 +116,105 @@ class WallpaperSwitcher(QObject):
         Lightening = 3
         Finished = 4
 
+    class ToChoices:
+        Previous = "Previous"
+        Next = "Next"
+
     def __init__(self, wallpapers, functions, setOpacity, duration=1800, frames=80):
         super().__init__()
         self.wallpapers = wallpapers
+        self.total = len(self.wallpapers)
         self.functions = functions
-        self.queue: List = self.wallpapers.copy()
+        # self.queue: List = self.wallpapers.copy()
+        self._current: Optional[int] = None
         self.duration = duration
         self.wp = None
         if self.activated:
             if Config.image_current is None or Config.image_current not in self.wallpapers:
-                Config.image_current = self.queue[0]
-                Config.save()
-            while self.queue[0] != Config.image_current:
-                self.queue.pop(0)
+                self.current = 0
+            self._current = self.wallpapers.index(Config.image_current)
         self.setOpacity.connect(setOpacity)
-        self.switch = self.SwitchStatus.Lightening
+        self.status = self.SwitchStatus.Lightening
+        self.switchTo = self.ToChoices.Next
         self.opacity = 1.0
         self.frames = frames
         if Config.image_time is None:
             self.last = None
         else:
             self.last = Config.image_time  # datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
-            self.switchNext()
             if (datetime.now() - self.last).total_seconds() > self.duration:
-                self.switchNext()
+                self._switchNext()
+            self.setImage()
         # print(self.last)
+
+    @property
+    def current_path(self):
+        return self.wallpapers[self._current]
+
+    @property
+    def current(self):
+        return self._current
+
+    @current.setter
+    def current(self, value):
+        if isinstance(value, int):
+            self._current = value
+            Config.image_current = self.wallpapers[value]
+        else:
+            self._current = self.wallpapers.index(value)
+            Config.image_current = value
+        Config.save()
 
     def path(self, dirname):
         return os.path.join(WALLPAPER_ROOT, dirname)
 
-    def setCurrent(self, current):
-        Config.image_current = current
-        Config.save()
-        return current
-
-    def switchNext(self):
+    def _switchPrevious(self):
         if not self.activated:
             return
-        self.wp = BgImage(self.path(self.setCurrent(self.queue.pop(0))))
+        if self.current <= 0:
+            self.current = self.total - 1
+        else:
+            self.current -= 1
+        self.setImage()
+
+    def _switchNext(self):
+        if not self.activated:
+            return
+        if self.current + 1 >= self.total:
+            self.current = 0
+        else:
+            self.current += 1
+        self.setImage()
+
+    def setImage(self):
+        self.wp = BgImage(self.path(self.current_path))
         self.wp.connectSignals(**self.functions)
         self.wp.setAll()
-        if not self.queue:
-            self.queue = self.wallpapers.copy()
+
+    def previous(self):
+        self.status = self.SwitchStatus.Darkening
+        self.switchTo = self.ToChoices.Previous
+
+    def next(self):
+        self.status = self.SwitchStatus.Darkening
+        self.switchTo = self.ToChoices.Next
 
     def progress(self, now):
-        if self.switch == self.SwitchStatus.Darkening:
+        if self.status == self.SwitchStatus.Darkening:
             self.opacity += 2.0 / self.frames
             if self.opacity >= 1.0:
                 self.opacity = 1
                 self.setOpacity.emit(1)
-                self.switch = self.SwitchStatus.Lightening
-                self.switchNext()
+                self.status = self.SwitchStatus.Lightening
+                getattr(self, f"_switch{self.switchTo}")()
             else:
                 self.setOpacity.emit(self.opacity)
-        elif self.switch == self.SwitchStatus.Lightening:
+        elif self.status == self.SwitchStatus.Lightening:
             self.opacity -= 2.0 / self.frames
             if self.opacity <= 0.0:
                 self.opacity = 0
                 self.setOpacity.emit(0)
-                self.switch = self.SwitchStatus.Waiting
+                self.status = self.SwitchStatus.Waiting
                 if self.activated:
                     self.setLast(now)
             else:
@@ -182,11 +222,11 @@ class WallpaperSwitcher(QObject):
         elif not self.activated:
             return
         elif self.last is None:
-            self.switchNext()
+            self.setImage()
             self.setLast(now)
-            self.switch = self.SwitchStatus.Lightening
+            self.status = self.SwitchStatus.Lightening
         elif (now - self.last).total_seconds() > self.duration:
-            self.switch = self.SwitchStatus.Darkening
+            self.next()
 
     def setLast(self, now):
         self.last = now

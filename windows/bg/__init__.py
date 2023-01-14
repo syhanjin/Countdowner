@@ -2,6 +2,7 @@
 import os
 import shutil
 from datetime import datetime
+from typing import Optional
 
 import win32gui
 from PyQt5.QtCore import QRect, Qt
@@ -23,7 +24,7 @@ class BgWindow(QWidget, Ui_BgWindow):
 
     def __init__(self):
         super().__init__()
-        self.wallpaper_switcher = None
+        self.wallpaper_switcher: Optional[WallpaperSwitcher] = None
         self.progress_list = []
         self.menu = QMenu(self)
         self.markOpacity = QGraphicsOpacityEffect(self)
@@ -53,9 +54,6 @@ class BgWindow(QWidget, Ui_BgWindow):
         # 为mark添加透明度
         self.markOpacity.setOpacity(1.0)
         self.mark.setGraphicsEffect(self.markOpacity)
-        # 任务栏图标
-        self.menu.addAction('重载壁纸').triggered.connect(self.reload_wallpapers)
-        self.menu.addAction('退出').triggered.connect(self.close)
         # 时间显示，文本框，大小 500 * 200
         self.progress_list += [
             TimeTexter(["hour", "minute", "second"], self.Time.setText, "%H:%M:%S"),
@@ -74,6 +72,12 @@ class BgWindow(QWidget, Ui_BgWindow):
             self.progress_list.append(
                 DailySentenceTexter(self.Text.setText)
             )
+        # 任务栏图标
+        if self.wallpaper_switcher.activated:
+            self.menu.addAction('上一张').triggered.connect(self.wallpaper_switcher.previous)
+            self.menu.addAction('下一张').triggered.connect(self.wallpaper_switcher.next)
+        self.menu.addAction('重载壁纸').triggered.connect(self.reload_wallpapers)
+        self.menu.addAction('退出').triggered.connect(self.close)
 
     def setTextBoxAlign(self, align):
         if align == "left":
