@@ -6,13 +6,12 @@ from typing import Optional
 
 import win32gui
 from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import (
     QApplication, QGraphicsOpacityEffect, QMenu, QWidget,
 )
 
 from configs.config import Config
-from configs.path_config import ASSETS_ROOT, WALLPAPER_DEFAULT_CONFIG_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
+from configs.path_config import WALLPAPER_DEFAULT_CONFIG_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
 from models.bgimage import WallpaperSwitcher
 from models.texter import DailySentenceTexter, DaysTexter, TimeTexter
 from utils import load_json, save_json
@@ -47,7 +46,6 @@ class BgWindow(QWidget, Ui_BgWindow):
             Qt.FramelessWindowHint
         )
         self.lower()
-        QFontDatabase.addApplicationFont(os.path.join(ASSETS_ROOT, "font", "LXGWWenKai-Regular.ttf"))
         self.load_wallpapers()
 
     def initAfterUi(self):

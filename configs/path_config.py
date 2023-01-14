@@ -4,6 +4,7 @@ from pathlib import Path
 CONFIG_FILE = Path("./config.yaml")
 
 ASSETS_ROOT = Path("./assets")
+FONT_ROOT = ASSETS_ROOT / "font"
 
 WALLPAPER_ROOT = ASSETS_ROOT / "wallpapers"
 WALLPAPER_LIST_FILE = WALLPAPER_ROOT / "list.json"
