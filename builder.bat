@@ -1,1 +1,6 @@
-conda activate countdowner&&pyinstaller manage.spec&&pyinstaller main.spec&&move dist\manage.exe dist\main\
+call conda activate countdowner
+pyinstaller manage.spec --noconfirm
+pyinstaller main.spec --noconfirm
+pyinstaller console.spec --noconfirm
+move dist\manage.exe dist\main\
+

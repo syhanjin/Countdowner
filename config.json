@@ -1,0 +1,34 @@
+{
+    "countdownbox": {
+        "color": {
+            "days": "red",
+            "target": "green",
+            "text": "black"
+        },
+        "pos": [
+            805,
+            790
+        ]
+    },
+    "image": "image.jpg",
+    "name": "default",
+    "textbox": {
+        "align": "center",
+        "pos": [
+            950,
+            423,
+            800,
+            150
+        ],
+        "stylesheet": "font: 32pt \"微软雅黑\";\nbackground-color: red",
+        "texts": [],
+        "use_global_texts": true
+    },
+    "timebox": {
+        "pos": [
+            771,
+            227
+        ]
+    },
+    "version": "0.1.6"
+}

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import shutil
 from datetime import datetime
 from typing import Optional
 
@@ -11,10 +10,10 @@ from PyQt5.QtWidgets import (
 )
 
 from configs.config import Config
-from configs.path_config import WALLPAPER_DEFAULT_CONFIG_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
+from configs.path_config import WALLPAPER_LIST_FILE, WALLPAPER_ROOT
 from models.bgimage import WallpaperSwitcher
 from models.texter import DailySentenceTexter, DaysTexter, TimeTexter
-from utils import load_json, save_json
+from utils import is_wallpaper, load_json, save_json
 from .bg import Ui_BgWindow
 from ..utils import pretreatmentHandle
 
@@ -32,10 +31,6 @@ class BgWindow(QWidget, Ui_BgWindow):
         self.initBeforeUi()
         self.setupUi(self)
         self.initAfterUi()
-        self.setStyleSheet(
-            f"#WallPaperBg{{background-color: rgb(0,0,0)}}"
-        )
-        self.setGeometry(QRect(0, 0, *self._size))
         self.startTimer(20)
 
     def initBeforeUi(self):
@@ -43,12 +38,16 @@ class BgWindow(QWidget, Ui_BgWindow):
         self._size = (desktop.width(), desktop.height())
         win32gui.SetParent(self.winId(), pretreatmentHandle())
         self.setWindowFlags(
-            Qt.FramelessWindowHint
+            Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint
         )
         self.lower()
         self.load_wallpapers()
 
     def initAfterUi(self):
+        self.setStyleSheet(
+            f"#WallPaperBg{{background-color: rgb(0,0,0)}}"
+        )
+        self.setGeometry(QRect(0, 0, *self._size))
         # 为mark添加透明度
         self.markOpacity.setOpacity(1.0)
         self.mark.setGraphicsEffect(self.markOpacity)
@@ -72,8 +71,8 @@ class BgWindow(QWidget, Ui_BgWindow):
             )
         # 任务栏图标
         if self.wallpaper_switcher.activated:
-            self.menu.addAction('上一张').triggered.connect(self.wallpaper_switcher.previous)
-            self.menu.addAction('下一张').triggered.connect(self.wallpaper_switcher.next)
+            self.menu.addAction('上一张').triggered.connect(self.wallpaper_switcher_previous)
+            self.menu.addAction('下一张').triggered.connect(self.wallpaper_switcher_next)
         self.menu.addAction('重载壁纸').triggered.connect(self.reload_wallpapers)
         self.menu.addAction('退出').triggered.connect(self.close)
 
@@ -106,29 +105,23 @@ class BgWindow(QWidget, Ui_BgWindow):
         )
         self.progress_list.append(self.wallpaper_switcher)
 
+    def wallpaper_switcher_previous(self):
+        self.wallpaper_switcher.previous()
+
+    def wallpaper_switcher_next(self):
+        self.wallpaper_switcher.next()
+
     # else:
     #     self.markOpacity.setOpacity(0)
 
     def reload_wallpapers(self):
         self.progress_list.remove(self.wallpaper_switcher)
+        del self.wallpaper_switcher
         self.wallpapers = []
         self.load_wallpapers()
         self.create_wallpaper_switcher()
 
     def load_wallpapers(self):
-        def is_wallpaper(item):
-            if item.startswith("."):
-                return False, ""
-            _path = os.path.join(WALLPAPER_ROOT, item)
-            if not os.path.exists(_path) or not os.path.isdir(_path):
-                return False, _path
-            config_path = os.path.join(_path, "config.json")
-            if not os.path.exists(config_path):
-                config_path = config_path + ".default"
-                if not os.path.exists(config_path + ".default"):
-                    shutil.copy(WALLPAPER_DEFAULT_CONFIG_FILE, config_path)
-                return False, _path
-            return True, _path
 
         if os.path.exists(WALLPAPER_LIST_FILE):
             list_ = load_json(WALLPAPER_LIST_FILE)
@@ -150,8 +143,8 @@ class BgWindow(QWidget, Ui_BgWindow):
 
     def timerEvent(self, *args, **kwargs):
         """
-        process
+        progress
         """
         now = datetime.now()
-        for texter in self.progress_list:
-            texter.progress(now)
+        for progress in self.progress_list:
+            progress.progress(now)

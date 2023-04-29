@@ -13,7 +13,7 @@ from datetime import datetime
 
 import yaml
 
-from configs.path_config import CONFIG_FILE
+from configs.path_config import CONFIG_FILE, RUNTIME_DATA_FILE
 
 CONFIG_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
@@ -37,11 +37,8 @@ class ConfigManager:
     target_time: datetime = DEFAULT["target_time"]
     image_duration: int = DEFAULT["image_duration"]
     image: bool = DEFAULT["image"]
-    image_current: str = DEFAULT["image_current"]
-    image_time: datetime = DEFAULT["image_time"]
     image_switch_frames: int = DEFAULT["image_switch_frames"]
     daily_sentence: bool = DEFAULT["daily_sentence"]
-    text_time: datetime = DEFAULT["text_time"]
 
     def __init__(self, data=None) -> None:
         if data is None:
@@ -49,21 +46,75 @@ class ConfigManager:
         for k, v in data.items():
             self.__setattr__(k, v)
 
-    def save(self):
+    def __getitem__(self, item):
+        return getattr(self, item, None)
+
+    def save(self, path=CONFIG_FILE):
         """
         保存配置
         """
-        with open(CONFIG_FILE, "w", encoding="utf8") as f:
+        with open(path, "w", encoding="utf8") as f:
             yaml.dump(
                 self.__dict__, f, indent=2, allow_unicode=True
             )
 
+
+class RunTimeDataManager:
+    fields = ['image_time', 'image_current', 'text_time']
+    image_time: datetime = DEFAULT["image_time"]
+    image_current: str = DEFAULT["image_current"]
+    text_time: datetime = DEFAULT["text_time"]
+
+    def __init__(self, data=None) -> None:
+        if data is None:
+            data = {}
+        for k, v in data.items():
+            self.__setattr__(k, v)
+
+    def __getitem__(self, item):
+        return getattr(self, item, None)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def save(self):
+        """
+        保存配置
+        """
+        with open(RUNTIME_DATA_FILE, "w", encoding="utf8") as f:
+            yaml.dump(
+                self.__dict__, f, indent=2, allow_unicode=True
+            )
+
+    def to_dict(self):
+        return self.__dict__
+
+
+RUNTIME_DATA_FILE.parent.mkdir(exist_ok=True, parents=True)
+if RUNTIME_DATA_FILE.exists():
+    """读取运行数据"""
+    with open(RUNTIME_DATA_FILE, "r", encoding="utf8") as f:
+        Runtime = RunTimeDataManager(yaml.load(f, Loader=yaml.FullLoader))
+else:
+    """创建运行数据文件"""
+    Runtime = RunTimeDataManager()
+    Runtime.save()
 
 CONFIG_FILE.parent.mkdir(exist_ok=True, parents=True)
 if CONFIG_FILE.exists():
     """读取配置"""
     with open(CONFIG_FILE, "r", encoding="utf8") as f:
         Config = ConfigManager(yaml.load(f, Loader=yaml.FullLoader))
+    # 将Config的Runtime转移到Runtime
+    cnt = 0
+    for field in Runtime.fields:
+        if Config[field]:
+            Runtime[field] = Config[field]
+            delattr(Config, field)
+            cnt += 1
+    if cnt > 0:
+        Config.save()
+        Runtime.save()
 else:
     """创建配置文件"""
     Config = ConfigManager()

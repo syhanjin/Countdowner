@@ -2,6 +2,7 @@
 from pathlib import Path
 
 CONFIG_FILE = Path("./config.yaml")
+RUNTIME_DATA_FILE = Path("./runtime.yaml")
 
 ASSETS_ROOT = Path("./assets")
 FONT_ROOT = ASSETS_ROOT / "font"

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
 import random
+import shutil
 from datetime import datetime
 from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 
-from configs.config import Config
+from configs.config import Config, Runtime
 from configs.path_config import TEXTS_FILE, WALLPAPER_ROOT
-from utils import load_json, text_wrapper
+from utils import load_json, save_json, text_wrapper
 
 
 class BgImage(QObject):
@@ -24,10 +25,12 @@ class BgImage(QObject):
     setTextBoxAlignSignal = pyqtSignal(str)
     setImageSignal = pyqtSignal(QPixmap)
 
-    name = None
+    edit = False
+    name = "default"
     image = None
+    image_path = None
     timebox = {
-        "pos": [10, 10]
+        "pos": [710, 240]
     }
     countdownbox = {
         "pos": [586, 10],
@@ -38,19 +41,29 @@ class BgImage(QObject):
         }
     }
     textbox = {
-        "pos": [
-            [0, 0, 200, 200]
-        ],
-        "stylesheet": "",
+        "pos": [560, 900, 800, 150],
+        "stylesheet": "font: 14pt \"微软雅黑\";",
+        "align": "center",
+        "use_global_texts": False,
         "texts": []
     }
     fields = ["name", "image", "timebox", "countdownbox", "textbox"]
     required = ["name", "image"]
 
-    def __init__(self, path):
+    def __init__(self, path=None, edit=False):
         super().__init__()
+        if path is None and not edit:
+            raise ValueError("必须提供路径")
+        self.edit = edit
         self.path = path
+        if path is None:
+            return
+        # print(os.path.exists(os.path.join(self.path, "config.json")))
+        # try:
         config = load_json(os.path.join(self.path, "config.json"))
+        # except Exception as e:
+        #     print(e)
+        # print(config)
         for key in self.fields:
             if key in config:
                 setattr(self, key, config[key])
@@ -59,6 +72,7 @@ class BgImage(QObject):
         if self.image is None:
             raise ValueError("必须提供图片路径")
         self.image_path = os.path.join(self.path, self.image)
+        # self.setImage()
 
     def connectSignals(self, **kwargs):
         for k, v in kwargs.items():
@@ -77,8 +91,10 @@ class BgImage(QObject):
         self.setCountDownTargetColorSignal.emit(self.colorsheet(self.countdownbox["color"]["target"]))
 
     def setText(self):
-        textbox = random.choice(self.textbox["pos"])
-        self.setTextBoxSignal.emit(*textbox)
+        # textbox = random.choice(self.textbox["pos"])
+        # self.setTextBoxSignal.emit(*textbox)
+        # 0.1.6 重大修改，文本框只允许一个位点，配置文件需要修改
+        self.setTextBoxSignal.emit(*self.textbox["pos"])
         self.setTextBoxAlignSignal.emit(self.textbox["align"])
         if self.textbox["stylesheet"]:
             self.setTextBoxStyleSheetSignal.emit(self.textbox["stylesheet"])
@@ -106,6 +122,33 @@ class BgImage(QObject):
     def colorsheet(self, color):
         return f"color: {color};"
 
+    def save(self, path=None):
+        if not self.edit:
+            raise RuntimeError()
+        if not self.path and path is None:
+            raise ValueError()
+        if path is not None:
+            self.path = path
+        if self.image_path is None:
+            return False
+        fn = f"image{os.path.splitext(self.image_path)[1]}"
+        image_path_new = os.path.join(path, fn)
+        if not os.path.exists(image_path_new) or not os.path.samefile(image_path_new, self.image_path):
+            shutil.copy(self.image_path, image_path_new)
+            self.image_path = image_path_new
+        self.image = fn
+        config = os.path.join(self.path, "config.json")
+        config_json = {
+            "version": "0.1.6",
+            "name": self.name,
+            "image": self.image,
+            "timebox": self.timebox,
+            "countdownbox": self.countdownbox,
+            "textbox": self.textbox
+        }
+        save_json(config_json, config)
+        return True
+
 
 class WallpaperSwitcher(QObject):
     setOpacity = pyqtSignal(float)
@@ -130,18 +173,18 @@ class WallpaperSwitcher(QObject):
         self.duration = duration
         self.wp = None
         if self.activated:
-            if Config.image_current is None or Config.image_current not in self.wallpapers:
+            if Runtime.image_current is None or Runtime.image_current not in self.wallpapers:
                 self.current = 0
-            self._current = self.wallpapers.index(Config.image_current)
+            self._current = self.wallpapers.index(Runtime.image_current)
         self.setOpacity.connect(setOpacity)
         self.status = self.SwitchStatus.Lightening
         self.switchTo = self.ToChoices.Next
         self.opacity = 1.0
         self.frames = frames
-        if Config.image_time is None:
+        if Runtime.image_time is None:
             self.last = None
         else:
-            self.last = Config.image_time  # datetime.strptime(Config.image_time, CONFIG_TIME_FORMAT)
+            self.last = Runtime.image_time  # datetime.strptime(Runtime.image_time, CONFIG_TIME_FORMAT)
             if (datetime.now() - self.last).total_seconds() > self.duration:
                 self._switchNext()
             self.setImage()
@@ -159,11 +202,11 @@ class WallpaperSwitcher(QObject):
     def current(self, value):
         if isinstance(value, int):
             self._current = value
-            Config.image_current = self.wallpapers[value]
+            Runtime.image_current = self.wallpapers[value]
         else:
             self._current = self.wallpapers.index(value)
-            Config.image_current = value
-        Config.save()
+            Runtime.image_current = value
+        Runtime.save()
 
     def path(self, dirname):
         return os.path.join(WALLPAPER_ROOT, dirname)
@@ -230,8 +273,8 @@ class WallpaperSwitcher(QObject):
 
     def setLast(self, now):
         self.last = now
-        Config.image_time = now  # .__format__(CONFIG_TIME_FORMAT)
-        Config.save()
+        Runtime.image_time = now  # .__format__(CONFIG_TIME_FORMAT)
+        Runtime.save()
 
     @property
     def activated(self):
