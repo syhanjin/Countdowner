@@ -5,6 +5,7 @@ import os.path
 import random
 import sys
 
+from configs.config import DEFAULT_TEXTS_JSON
 from configs.path_config import TEXTS_FILE
 from utils import load_json, save_json
 
@@ -37,7 +38,7 @@ Countdown配置快速管理工具
 
 def get_texts_json():
     if not os.path.exists(TEXTS_FILE):
-        return {"texts": []}
+        return DEFAULT_TEXTS_JSON
     return load_json(TEXTS_FILE)
 
 

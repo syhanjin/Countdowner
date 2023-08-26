@@ -5,7 +5,7 @@ from PyQt5.QtCore import QModelIndex, QUrl
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QFileDialog, QFormLayout, QListView, QMainWindow, QMessageBox, QSizePolicy
 
-from configs.config import Config
+from configs.config import Config, DEFAULT_TEXTS_JSON
 from configs.path_config import TEXTS_FILE, WALLPAPER_LIST_FILE
 from models.listModel import WallpaperListItem, WallpaperListWidget
 from utils import QDateTime2Seconds, Second2Time, load_json, save_json, wallpapers
@@ -16,7 +16,10 @@ from .console import Ui_Console
 class Console(QMainWindow, Ui_Console):
     def __init__(self):
         super().__init__()
-        self.text_json = load_json(TEXTS_FILE)
+        if os.path.exists(TEXTS_FILE):
+            self.text_json = load_json(TEXTS_FILE)
+        else:
+            self.text_json = DEFAULT_TEXTS_JSON
         self.setupUi(self)
         self.initAfterUi()
         # 配置将从全局Config对象修改
@@ -39,9 +42,9 @@ class Console(QMainWindow, Ui_Console):
             self.ImageList.addItem(itemWidget)
             self.ImageList.setItemWidget(itemWidget, itemWidget.widget)
         self.ImageList.ItemDeleted.connect(self.imageList.remove)
-
-        self.TextList.addItems(self.text_json["texts"])
-        self.TextList.item(self.text_json.get('current') or 0).setSelected(True)
+        if len(self.text_json["texts"]) > 0:
+            self.TextList.addItems(self.text_json["texts"])
+            self.TextList.item(self.text_json.get('current') or 0).setSelected(True)
         # print(self.ImageList.item())
         self.ImageList.doubleClicked.connect(self.openDesigner)
         self.Save.clicked.connect(self.save)

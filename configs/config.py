@@ -30,6 +30,11 @@ DEFAULT = {
     "text_time": None
 }
 
+DEFAULT_TEXTS_JSON = {
+    "current": 0,
+    "texts": []
+}
+
 
 class ConfigManager:
     target: bool = DEFAULT["target"]

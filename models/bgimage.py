@@ -268,6 +268,8 @@ class WallpaperSwitcher(QObject):
             self.setImage()
             self.setLast(now)
             self.status = self.SwitchStatus.Lightening
+        elif self.total <= 1:
+            pass
         elif (now - self.last).total_seconds() > self.duration:
             self.next()
 

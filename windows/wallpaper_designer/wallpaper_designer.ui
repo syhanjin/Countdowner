@@ -48,7 +48,7 @@
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">color: #12aa9c</string>
      </property>
      <property name="text">
       <string>2022-12-03 Sat</string>
@@ -83,6 +83,9 @@
        <family>霞鹜文楷</family>
        <pointsize>64</pointsize>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: #1772b4</string>
      </property>
      <property name="text">
       <string>12:40:33</string>

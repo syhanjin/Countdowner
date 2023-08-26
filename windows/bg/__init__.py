@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 )
 
 from configs.config import Config
-from configs.path_config import WALLPAPER_LIST_FILE, WALLPAPER_ROOT
+from configs.path_config import TEXTS_FILE, WALLPAPER_LIST_FILE, WALLPAPER_ROOT
 from models.bgimage import WallpaperSwitcher
 from models.texter import DailySentenceTexter, DaysTexter, TimeTexter
 from utils import is_wallpaper, load_json, save_json
@@ -65,10 +65,12 @@ class BgWindow(QWidget, Ui_BgWindow):
         else:
             self.CountDown.hide()
         self.create_wallpaper_switcher()
-        if Config.daily_sentence:
-            self.progress_list.append(
-                DailySentenceTexter(self.Text.setText)
-            )
+        if os.path.exists(TEXTS_FILE):
+            texts_json = load_json(TEXTS_FILE)
+            if Config.daily_sentence and len(texts_json["texts"]) > 0:
+                self.progress_list.append(
+                    DailySentenceTexter(self.Text.setText)
+                )
         # 任务栏图标
         if self.wallpaper_switcher.activated:
             self.menu.addAction('上一张').triggered.connect(self.wallpaper_switcher_previous)
